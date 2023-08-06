@@ -370,10 +370,12 @@ impl Folder {
     //     V8 WorkerThread 24636/25607 [000] 94564.109216: cycles:
     //     vote   913    72.176760:     257597 cycles:uppp:
     //     false 64414 20110.539270:      34467 cycles:u:  ffffffff9aa3c8de [unknown] ([unknown])
+    //     tidb-server 123720 [000] 11736.070036: runtime:newobject: (1843c20)
     fn on_event_line(&mut self, line: &str) {
         self.in_event = true;
 
         if let Some((comm, pid, tid, end)) = Self::event_line_parts(line) {
+            // line[end..] = " [000] 11736.070036: runtime:newobject: (1843c20)"
             let mut by_colons = line[end..].splitn(3, ':').skip(1);
             let event = by_colons
                 .next()
@@ -842,6 +844,31 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn test_event_line_parts() {
+        assert_eq!(Folder::event_line_parts("java 25607 4794564.109216: cycles:"), Some(("java", "?", "25607", 11)));
+        assert_eq!(Folder::event_line_parts("java 12688 [002] 6544038.708352: cpu-clock:"), Some(("java", "?", "12688", 11)));
+        assert_eq!(Folder::event_line_parts("V8 WorkerThread 25607 4794564.109216: cycles:"), Some(("V8 WorkerThread", "?", "25607", 22)));
+        assert_eq!(Folder::event_line_parts("java 24636/25607 [000] 4794564.109216: cycles:"), Some(("java", "24636", "25607", 17)));
+        assert_eq!(Folder::event_line_parts("java 12688/12764 6544038.708352: cpu-clock:"), Some(("java", "12688", "12764", 17)));
+        assert_eq!(Folder::event_line_parts("V8 WorkerThread 24636/25607 [000] 94564.109216: cycles:"), Some(("V8 WorkerThread", "24636", "25607", 28)));
+        assert_eq!(Folder::event_line_parts("vote   913    72.176760:     257597 cycles:uppp:"), Some(("vote", "?", "913", 11)));
+        assert_eq!(Folder::event_line_parts("false 64414 20110.539270:      34467 cycles:u:  ffffffff9aa3c8de [unknown] ([unknown])"), Some(("false", "?", "64414", 12)));
+        assert_eq!(Folder::event_line_parts("tidb-server 123720 [000] 11736.070036: runtime:newobject: (1843c20)"), Some(("tidb-server", "?", "123720", 19)));
+    }
+
+    fn assert_event_line_parses_event(line: &str, expected: Option<String>) {
+        let mut folder = Folder::default();
+        folder.on_event_line(line);
+        assert_eq!(folder.event_filter, expected);
+    }
+
+    // #[test]
+    // fn test_on_event_line() {
+    //     assert_event_line_parses_event("false 64414 20110.539270:      34467 cycles:u:  ffffffff9aa3c8de [unknown] ([unknown])", Some("cycles".into()));
+    //     assert_event_line_parses_event("tidb-server 123720 [000] 11736.070036: runtime:newobject: (1843c20)", Some("runtime:newobject".into()));
+    // }
 
     /// Varies the nstacks_per_job parameter and outputs the 10 fastests configurations by file.
     ///

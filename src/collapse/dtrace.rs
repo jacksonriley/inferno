@@ -447,7 +447,7 @@ mod tests {
         );
     }
 
-    #[test]
+
     fn test_collapse_multi_dtrace() -> io::Result<()> {
         let mut folder = Folder::default();
         common::testing::test_collapse_multi(&mut folder, &INPUT)

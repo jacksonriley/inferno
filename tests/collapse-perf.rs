@@ -234,7 +234,8 @@ collapse_perf_tests! {
     collapse_perf_go_stacks,
     collapse_perf_java_inline,
     collapse_perf_versioned_vmlinux__kernel,
-    collapse_perf_sourcepawn_jitdump__jit
+    collapse_perf_sourcepawn_jitdump__jit,
+    collapse_perf_event_contains_colon
 }
 
 #[test]
